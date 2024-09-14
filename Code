@@ -1,73 +1,114 @@
-import re  # Importa a biblioteca re para usar expressões regulares
+<programa> ::= <expressao>
+<expressao> ::= <termo> ( ('+' | '-') <termo> )*
+<termo> ::= <fator> ( ('*' | '/') <fator> )*
+<fator> ::= <numero> | <variavel> | '(' <expressao> ')'
+<numero> ::= [0-9]+(\.[0-9]+)?
+<variavel> ::= [a-zA-Z_][a-zA-Z_0-9]*
 
-class SimpleCalculator:
-    def __init__(self):
-        self.variables = {}  # Dicionário para armazenar variáveis
-        self.valid_operators = set('+-*/()')  # Operadores válidos
+import re
 
-    def is_valid_expression(self, expression):
-        # Verifica se a expressão contém apenas caracteres válidos (números, operadores, variáveis e parênteses)
-        valid_pattern = re.compile(r'^[a-zA-Z0-9_+\-*/().\s]*$')
-        return valid_pattern.match(expression) is not None
+# Função para identificar se o token é um número
+def is_number(token):
+    return re.match(r"^[0-9]+(\.[0-9]+)?$", token)
 
-    def is_valid_assignment(self, assignment):
-        # Verifica se a atribuição é válida (uma variável sendo atribuída a uma expressão)
-        valid_pattern = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*\s*=\s*[\d\w+\-*/().\s]+$')
-        return valid_pattern.match(assignment) is not None
+# Função para identificar se o token é uma variável
+def is_variable(token):
+    return re.match(r"^[a-zA-Z_][a-zA-Z_0-9]*$", token)
 
-    def evaluate_expression(self, expression):
-        try:
-            # Verifica se a expressão contém apenas caracteres válidos
-            if not self.is_valid_expression(expression):
-                raise ValueError("Invalid characters in expression.")
+# Função para avaliar uma expressão
+def evaluate_expression(expression, variables, history):
+    try:
+        # Expressões aceitas
+        tokens = re.findall(r"[0-9]+(\.[0-9]+)?|[a-zA-Z_][a-zA-Z_0-9]*|[+\-*/()]|=", expression)
 
-            # Substitui variáveis pelos seus valores na expressão
-            for var in self.variables:
-                expression = expression.replace(var, str(self.variables[var]))
+        def eval_tokens(tokens):
+            stack = []
+            postfix = []
+            ops = {'+': 1, '-': 1, '*': 2, '/': 2}
 
-            # Avaliação da expressão utilizando eval
-            result = eval(expression)
-            return result
-        except ZeroDivisionError:
-            return "Error: Division by zero."
-        except SyntaxError:
-            return "Error: Invalid syntax in expression."
-        except Exception as e:
-            return f"Error: {str(e)}"
+            def precedence(op):
+                return ops[op] if op in ops else 0
 
-    def assign_variable(self, assignment):
-        try:
-            # Verifica se a atribuição é válida
-            if not self.is_valid_assignment(assignment):
-                raise ValueError("Invalid assignment statement.")
+            def apply_operator(operators, values):
+                right = values.pop()
+                left = values.pop()
+                op = operators.pop()
+                if op == '+':
+                    values.append(left + right)
+                elif op == '-':
+                    values.append(left - right)
+                elif op == '*':
+                    values.append(left * right)
+                elif op == '/':
+                    values.append(left / right)
 
-            # Divide a atribuição em variável e expressão
-            var, expr = assignment.split('=', 1)
-            var = var.strip()
-            expr = expr.strip()
+            # Convert infix to postfix
+            for token in tokens:
+                if is_number(token):
+                    postfix.append(float(token))
+                elif is_variable(token):
+                    if token in history:
+                        # Se a variável estiver no histórico de resultados
+                        postfix.append(history[token])
+                    elif token in variables:
+                        postfix.append(variables[token])
+                    else:
+                        raise ValueError(f"Erro: variável '{token}' não declarada.")
+                elif token in ops:
+                    while (stack and precedence(token) <= precedence(stack[-1])):
+                        postfix.append(stack.pop())
+                    stack.append(token)
+                elif token == '(':
+                    stack.append(token)
+                elif token == ')':
+                    while stack and stack[-1] != '(':
+                        postfix.append(stack.pop())
+                    stack.pop()  # Remover o '('
+            
+            while stack:
+                postfix.append(stack.pop())
 
-            # Avalia a expressão e armazena o valor na variável
-            value = self.evaluate_expression(expr)
-            if isinstance(value, str) and value.startswith("Error"):
-                return value
-            else:
-                self.variables[var] = value
-                return f"{var} = {value}"
-        except Exception as e:
-            return f"Error: {str(e)}"
+            # Avaliar a expressão postfix
+            values = []
+            for token in postfix:
+                if isinstance(token, float):
+                    values.append(token)
+                else:
+                    apply_operator(stack, values)
 
-    def run(self):
-        # Loop principal para leitura de entrada e execução de comandos
-        while True:
-            user_input = input("Enter expression or assignment (or 'exit' to quit): ")
-            if user_input.lower() == 'exit':
-                break
-            if '=' in user_input:
-                print(self.assign_variable(user_input))
-            else:
-                print(self.evaluate_expression(user_input))
+            return values[0]
 
-if __name__ == "__main__":
-    calc = SimpleCalculator()
-    calc.run()
+        # Avaliando os tokens da expressão
+        result = eval_tokens(tokens)
+        
+        # Armazenando o resultado no histórico
+        history[f"resultado_{len(history) + 1}"] = result
+
+        return result
+
+    except Exception as e:
+        return str(e)
+
+# Função para exibir o histórico de resultados
+def show_history(history):
+    print("\nHistórico de Resultados:")
+    for key, value in history.items():
+        print(f"{key}: {value}")
+
+# Variáveis pré-definidas
+variables = {"x": 10, "y": 20}
+
+# Histórico para armazenar os resultados anteriores
+history = {}
+
+# Testando a calculadora com armazenamento de resultados
+while True:
+    expression = input("\nDigite uma expressão (ou 'sair' para terminar, 'historico' para ver resultados passados): ")
+    if expression.lower() == "sair":
+        break
+    elif expression.lower() == "historico":
+        show_history(history)
+    else:
+        result = evaluate_expression(expression, variables, history)
+        print(f"Resultado: {result}")
 
