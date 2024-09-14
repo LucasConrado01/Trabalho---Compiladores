@@ -25,19 +25,6 @@ Você pode reutilizar os resultados anteriores nas novas expressões. Por exempl
 Comando de Histórico:
 
 Para ver o histórico completo dos resultados calculados, basta digitar historico durante a execução.
-🛠️ Instalação e Uso
-Clone o repositório:
-
-bash
-Copiar código
-git clone https://github.com/seu-usuario/calculadora-com-historico.git
-cd calculadora-com-historico
-Execute o script Python:
-
-bash
-Copiar código
-python calculadora.py
-Digite suas expressões e veja o resultado imediatamente!
 
 📚 Exemplo de Uso
 bash
