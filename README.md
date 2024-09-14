@@ -1,45 +1,29 @@
-🧮 Calculadora com Armazenamento de Resultados
+Passos para que o código funcione:
+📥 Instalação do ANTLR4 e Configuração do Ambiente:
 
-Este projeto é uma calculadora simples desenvolvida em Python, que suporta variáveis, operações matemáticas básicas e armazena os resultados de cálculos anteriores para reutilização. Além disso, oferece um histórico interativo para consultar os resultados passados. 🔥
+🔧 Você deve instalar o ANTLR4 e configurar o ambiente corretamente.
+Faça o download do arquivo antlr-4.8-complete.jar e configure o CLASSPATH no seu ambiente. Execute os seguintes comandos:
 
-📜 Funcionalidades
-Suporta operações aritméticas: adição (+), subtração (-), multiplicação (*), divisão (/).
-Aceita números reais (com ou sem ponto decimal).
-Usa variáveis pré-definidas como x e y.
-Armazena o histórico dos cálculos passados.
-Permite reutilizar os resultados anteriores nas expressões futuras.
-Possibilidade de visualizar o histórico de resultados digitando o comando historico.
+      cd /usr/local/lib
+      sudo curl -O https://www.antlr.org/download/antlr-4.8-complete.jar
+      export CLASSPATH=".:/usr/local/lib/antlr-4.8-complete.jar:$CLASSPATH"
+      alias antlr4='java -jar /usr/local/lib/antlr-4.8-complete.jar'
+      alias grun='java org.antlr.v4.gui.TestRig'
+      
+Isso permite que você use o comando antlr4 para gerar os arquivos lexer e parser.
 
-🚀 Como Funciona
-Entrada de Expressões:
+🐍 Instalação do runtime Python para ANTLR:
 
-Você pode digitar expressões como x + y * 2, onde x e y são variáveis.
-A calculadora processa a expressão e exibe o resultado.
-Armazenamento de Resultados:
+🛠️ Para que o código Python funcione com ANTLR, instale o pacote antlr4-python3-runtime com o seguinte comando:
 
-Cada cálculo é automaticamente salvo em um histórico interno.
-O resultado é armazenado em uma chave do tipo "resultado_X", onde X é o número da expressão (ex: resultado_1, resultado_2).
-Reutilização de Resultados:
+      pip3 install antlr4-python3-runtime
 
-Você pode reutilizar os resultados anteriores nas novas expressões. Por exemplo, se resultado_1 = 50, você pode usar resultado_1 + 10 em expressões futuras.
-Comando de Histórico:
+📄 Geração do Lexer e Parser:
+📜 Depois de configurar o ANTLR, use o arquivo de gramática Calculantlr.g4 para gerar os arquivos necessários para o lexer e parser:
+      antlr4 -Dlanguage=Python3 Calculantlr.g4 -visitor -o dist
 
-Para ver o histórico completo dos resultados calculados, basta digitar historico durante a execução.
+O comando acima gera os arquivos CalculantlrLexer.py, CalculantlrParser.py e CalculantlrVisitor.py dentro da pasta dist. Certifique-se de que a gramática está correta!
 
-📚 Exemplo de Uso
-bash
-Copiar código
-Digite uma expressão (ou 'sair' para terminar, 'historico' para ver resultados passados): x + y * 2
-Resultado: 50.0
-
-Digite uma expressão (ou 'sair' para terminar, 'historico' para ver resultados passados): resultado_1 - 10
-Resultado: 40.0
-
-Digite uma expressão (ou 'sair' para terminar, 'historico' para ver resultados passados): historico
-
-Histórico de Resultados:
-resultado_1: 50.0
-resultado_2: 40.0
-📦 Estrutura do Projeto
-calculadora.py: Arquivo principal que contém o código da calculadora com o histórico de resultados.
-README.md: Documentação do projeto (este arquivo).
+💻 Execução do Código:
+Agora, você pode executar o código com o Python normalmente. O código lê uma expressão matemática, realiza o "lexing" e "parsing", e então avalia a expressão com o visitor personalizado:
+      python3 main.py
