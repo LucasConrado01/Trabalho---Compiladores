@@ -20,6 +20,7 @@ Isso permite que você use o comando antlr4 para gerar os arquivos lexer e parse
 
 📄 Geração do Lexer e Parser:
 📜 Depois de configurar o ANTLR, use o arquivo de gramática Calculantlr.g4 para gerar os arquivos necessários para o lexer e parser:
+
       antlr4 -Dlanguage=Python3 Calculantlr.g4 -visitor -o dist
 
 O comando acima gera os arquivos CalculantlrLexer.py, CalculantlrParser.py e CalculantlrVisitor.py dentro da pasta dist. Certifique-se de que a gramática está correta!
