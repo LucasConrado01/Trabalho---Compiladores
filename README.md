@@ -1,4 +1,5 @@
-🧮 *Calculadora com Armazenamento de Resultados*
+🧮 Calculadora com Armazenamento de Resultados
+
 Este projeto é uma calculadora simples desenvolvida em Python, que suporta variáveis, operações matemáticas básicas e armazena os resultados de cálculos anteriores para reutilização. Além disso, oferece um histórico interativo para consultar os resultados passados. 🔥
 
 📜 Funcionalidades
@@ -8,6 +9,7 @@ Usa variáveis pré-definidas como x e y.
 Armazena o histórico dos cálculos passados.
 Permite reutilizar os resultados anteriores nas expressões futuras.
 Possibilidade de visualizar o histórico de resultados digitando o comando historico.
+
 🚀 Como Funciona
 Entrada de Expressões:
 
