@@ -1,114 +1,88 @@
-<programa> ::= <expressao>
-<expressao> ::= <termo> ( ('+' | '-') <termo> )*
-<termo> ::= <fator> ( ('*' | '/') <fator> )*
-<fator> ::= <numero> | <variavel> | '(' <expressao> ')'
-<numero> ::= [0-9]+(\.[0-9]+)?
-<variavel> ::= [a-zA-Z_][a-zA-Z_0-9]*
+#!/usr/bin/python3
+import sys
+from antlr4 import *  # Importa a biblioteca ANTLR para manipulação de lexer, parser, e árvore de sintaxe
+from dist.CalculantlrLexer import CalculantlrLexer  # Importa o lexer gerado a partir da gramática ANTLR
+from dist.CalculantlrParser import CalculantlrParser  # Importa o parser gerado a partir da gramática ANTLR
+from dist.CalculantlrVisitor import CalculantlrVisitor  # Importa a classe visitor gerada para visitar a árvore de sintaxe
 
-import re
 
-# Função para identificar se o token é um número
-def is_number(token):
-    return re.match(r"^[0-9]+(\.[0-9]+)?$", token)
+# Classe personalizada que herda de CalculantlrVisitor, permitindo visitar e avaliar a árvore de sintaxe
+class EvalVisitor(CalculantlrVisitor):
 
-# Função para identificar se o token é uma variável
-def is_variable(token):
-    return re.match(r"^[a-zA-Z_][a-zA-Z_0-9]*$", token)
+    # Método que trata expressões literais, como números. Converte o texto em um número.
+    def visitLiteralExpr(self, ctx:CalculantlrParser.LiteralExprContext):
+        return int(ctx.getText())  # Converte o texto da expressão literal em um inteiro
 
-# Função para avaliar uma expressão
-def evaluate_expression(expression, variables, history):
-    try:
-        # Expressões aceitas
-        tokens = re.findall(r"[0-9]+(\.[0-9]+)?|[a-zA-Z_][a-zA-Z_0-9]*|[+\-*/()]|=", expression)
+    # Método que trata expressões com parênteses, retornando a avaliação da expressão dentro dos parênteses.
+    def visitGroupExpr(self, ctx:CalculantlrParser.GroupExprContext):
+        return self.visit(ctx.expr())  # Visita e avalia a expressão dentro dos parênteses
 
-        def eval_tokens(tokens):
-            stack = []
-            postfix = []
-            ops = {'+': 1, '-': 1, '*': 2, '/': 2}
+    # Método que trata operações binárias (+, -, *, /) entre duas expressões.
+    def visitOperationExpr(self, ctx:CalculantlrParser.OperationExprContext):
+        left = self.visit(ctx.left)  # Avalia o lado esquerdo da expressão
+        right = self.visit(ctx.right)  # Avalia o lado direito da expressão
 
-            def precedence(op):
-                return ops[op] if op in ops else 0
+        operator = ctx.op.text  # Obtém o operador da expressão (ex: +, -, *, /)
+        # Realiza a operação com base no operador
+        if operator == '+':
+            return left + right
+        elif operator == '-':
+            return left - right
+        elif operator == '*':
+            return left * right
+        elif operator == '/':
+            if right == 0:  # Verifica divisão por zero
+                print('Erro: divisão por zero!')
+                return 0
+            return left / right
 
-            def apply_operator(operators, values):
-                right = values.pop()
-                left = values.pop()
-                op = operators.pop()
-                if op == '+':
-                    values.append(left + right)
-                elif op == '-':
-                    values.append(left - right)
-                elif op == '*':
-                    values.append(left * right)
-                elif op == '/':
-                    values.append(left / right)
 
-            # Convert infix to postfix
-            for token in tokens:
-                if is_number(token):
-                    postfix.append(float(token))
-                elif is_variable(token):
-                    if token in history:
-                        # Se a variável estiver no histórico de resultados
-                        postfix.append(history[token])
-                    elif token in variables:
-                        postfix.append(variables[token])
-                    else:
-                        raise ValueError(f"Erro: variável '{token}' não declarada.")
-                elif token in ops:
-                    while (stack and precedence(token) <= precedence(stack[-1])):
-                        postfix.append(stack.pop())
-                    stack.append(token)
-                elif token == '(':
-                    stack.append(token)
-                elif token == ')':
-                    while stack and stack[-1] != '(':
-                        postfix.append(stack.pop())
-                    stack.pop()  # Remover o '('
-            
-            while stack:
-                postfix.append(stack.pop())
+# Função que processa a entrada de uma expressão e a avalia
+def evaluate(expression) -> float:
+    input_stream = InputStream(expression)  # Cria um fluxo de entrada a partir da expressão
 
-            # Avaliar a expressão postfix
-            values = []
-            for token in postfix:
-                if isinstance(token, float):
-                    values.append(token)
-                else:
-                    apply_operator(stack, values)
+    # Lexical analysis (tokenização)
+    lexer = CalculantlrLexer(input_stream)  # Cria o lexer a partir do fluxo de entrada
+    token_stream = CommonTokenStream(lexer)  # Cria um fluxo de tokens a partir do lexer
 
-            return values[0]
+    # Syntax analysis (parsing)
+    parser = CalculantlrParser(token_stream)  # Cria o parser a partir do fluxo de tokens
+    syntax_tree = parser.expr()  # Analisa a expressão e gera a árvore de sintaxe
 
-        # Avaliando os tokens da expressão
-        result = eval_tokens(tokens)
-        
-        # Armazenando o resultado no histórico
-        history[f"resultado_{len(history) + 1}"] = result
+    # Visitor traversal for evaluation
+    eval_visitor = EvalVisitor()  # Cria um visitante para avaliar a árvore de sintaxe
+    return eval_visitor.visit(syntax_tree)  # Avalia e retorna o resultado da árvore
 
-        return result
 
-    except Exception as e:
-        return str(e)
+# Loop principal para permitir a entrada de várias expressões
+if __name__ == '__main__':
+    while True:
+        print(">>> ", end='')  # Prompt de entrada
+        expr = input()  # Lê a expressão do usuário
+        print(evaluate(expr))  # Avalia e imprime o resultado da expressão
 
-# Função para exibir o histórico de resultados
-def show_history(history):
-    print("\nHistórico de Resultados:")
-    for key, value in history.items():
-        print(f"{key}: {value}")
 
-# Variáveis pré-definidas
-variables = {"x": 10, "y": 20}
 
-# Histórico para armazenar os resultados anteriores
-history = {}
+def evaluate(expression) -> float:
+    input_stream = InputStream(expression)
 
-# Testando a calculadora com armazenamento de resultados
-while True:
-    expression = input("\nDigite uma expressão (ou 'sair' para terminar, 'historico' para ver resultados passados): ")
-    if expression.lower() == "sair":
-        break
-    elif expression.lower() == "historico":
-        show_history(history)
-    else:
-        result = evaluate_expression(expression, variables, history)
-        print(f"Resultado: {result}")
+    # Lexical analysis
+    lexer = CalculantlrLexer(input_stream)
+    token_stream = CommonTokenStream(lexer)
+
+    # Syntax analysis
+    parser = CalculantlrParser(token_stream)
+    syntax_tree = parser.expr()
+
+    # Visitor traversal for evaluation
+    eval_visitor = EvalVisitor()
+    return eval_visitor.visit(syntax_tree)
+
+
+
+if __name__ == '__main__':
+    while True:
+        print(">>> ", end='')
+        expr = input()
+        print(evaluate(expr))
 
